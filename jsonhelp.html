@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Pretty Viewer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            background-color: #ffffff; /* White background for the main card */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 0.75rem; /* Rounded corners */
+            padding: 2rem;
+            width: 100%;
+            max-width: 800px;
+        }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .custom-file-upload {
+            background-color: #4f46e5; /* Indigo-600 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+        .custom-file-upload:hover {
+            background-color: #4338ca; /* Indigo-700 */
+        }
+        pre {
+            background-color: #f8fafc; /* Lighter gray for code block */
+            border: 1px solid #e2e8f0; /* Light border */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto; /* Enable horizontal scrolling for long lines */
+            white-space: pre-wrap; /* Wrap long lines */
+            word-break: break-all; /* Break words to prevent overflow */
+            max-height: 500px; /* Max height for output */
+            font-size: 0.875rem; /* Smaller font for code */
+            line-height: 1.5;
+        }
+        .error-message {
+            color: #dc2626; /* Red-600 */
+            background-color: #fef2f2; /* Red-50 */
+            border: 1px solid #ef4444; /* Red-500 */
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+        .success-message {
+            color: #16a34a; /* Green-700 */
+            background-color: #f0fdf4; /* Green-50 */
+            border: 1px solid #22c55e; /* Green-500 */
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">JSON Pretty Viewer</h1>
+        <p class="text-gray-600 mb-6 text-center">Upload a .json file to view its content in a human-readable, formatted way.</p>
+
+        <div class="flex flex-col items-center gap-4 mb-6">
+            <div class="file-input-wrapper">
+                <input type="file" id="jsonFileInput" accept=".json">
+                <label for="jsonFileInput" class="custom-file-upload">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Upload JSON File</span>
+                </label>
+            </div>
+            <span id="fileName" class="text-gray-500 text-sm">No file chosen</span>
+        </div>
+
+        <div id="messageContainer" class="mb-4"></div>
+
+        <div id="outputContainer" class="hidden">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Formatted JSON Output:</h2>
+            <pre id="jsonOutput" class="text-gray-800"></pre>
+        </div>
+    </div>
+
+    <script>
+        const jsonFileInput = document.getElementById('jsonFileInput');
+        const fileNameSpan = document.getElementById('fileName');
+        const messageContainer = document.getElementById('messageContainer');
+        const outputContainer = document.getElementById('outputContainer');
+        const jsonOutput = document.getElementById('jsonOutput');
+
+        jsonFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                fileNameSpan.textContent = file.name;
+                messageContainer.innerHTML = ''; // Clear previous messages
+                outputContainer.classList.add('hidden'); // Hide previous output
+                jsonOutput.textContent = ''; // Clear previous JSON
+
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    try {
+                        const jsonString = e.target.result;
+                        const parsedJson = JSON.parse(jsonString); // Parse the JSON
+                        // Pretty print the JSON with 2 space indentation
+                        const prettyJson = JSON.stringify(parsedJson, null, 2);
+                        jsonOutput.textContent = prettyJson; // Display in pre tag
+                        outputContainer.classList.remove('hidden'); // Show output container
+                        showMessage('JSON file processed successfully!', 'success');
+
+                    } catch (error) {
+                        fileNameSpan.textContent = 'No file chosen'; // Reset file name
+                        jsonFileInput.value = ''; // Clear input
+                        // Handle JSON parsing errors
+                        showMessage('Error: Invalid JSON file. Please upload a valid .json file.', 'error');
+                        console.error('JSON parsing error:', error);
+                    }
+                };
+
+                reader.onerror = () => {
+                    fileNameSpan.textContent = 'No file chosen'; // Reset file name
+                    jsonFileInput.value = ''; // Clear input
+                    showMessage('Error: Could not read the file.', 'error');
+                    console.error('File reading error:', reader.error);
+                };
+
+                reader.readAsText(file); // Read the file as text
+            } else {
+                fileNameSpan.textContent = 'No file chosen';
+                messageContainer.innerHTML = '';
+                outputContainer.classList.add('hidden');
+                jsonOutput.textContent = '';
+            }
+        });
+
+        function showMessage(text, type) {
+            messageContainer.innerHTML = `<div class="${type}-message rounded-md p-3 mb-4 text-sm">${text}</div>`;
+        }
+    </script>
+</body>
+</html>
